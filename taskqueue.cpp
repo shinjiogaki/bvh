@@ -34,11 +34,10 @@ struct Pivot
 
 struct BVH
 {
-	static const int Depth = 128;
 	static const int LeafCount = 4;
 
-	// depth x 2 x core is enough for binary tree
-	Pivot Pivots[Depth * 2];
+	// depth x 2 x num of threads is enough for binary tree
+	Pivot Pivots[1024];
 
 	std::mutex Mutex;
 	int ActiveThreads;
