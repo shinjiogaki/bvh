@@ -10,7 +10,7 @@
     <style type="text/css">
         body {
             margin: 0px;
-            padding: 2em 16em;
+            padding: 8em 8em;
         }
     </style>
 </head>
@@ -164,6 +164,7 @@
     <p data-line="NaN" class="code-line code-line code-line">構築方法について述べましたので、構築しない方法についても触れたいと思います。日本語にすると分割統治法(Divide and Conquer Ray Tracing, DACRT)と呼ばれるアプローチで入力データを小さなグループに分割し、そのグループ内で総当たりの交差判定を行いまうす。構築とトラバースを同時に行い、構築したBVHを保存しないのが特徴で、動的なシーンのレンダリングに適しています。</p>
     <p data-line="NaN" class="code-line code-line code-line">プリミティブの陰的なデータ構造にはBVH、Octree、kd-treeなど任意なものを用いることが出来て、長所と短所をそのまま継承します。またレイの分割にも4次元のLight Fieldで行えるなど、自由度は大変高いです。また、グループ分けをイン・プレイスで行った場合、事前に消費メモリのサイズが分かるため、ハードウェアの実装に適しています。</p>
     <p data-line="NaN" class="code-line code-line code-line">学術的には大変面白い手法ですが、プロダクション・レンダラでの採用が進まないのには理由があります。この方法ではパフォーマンスを上げるため、あるいは構築分のコストを償却するため同時に多くのレイ扱いますが、プロダクション・レンダラでは一つのレイに非常に多くの情報(レイ微分、QMCなどサンプルに関連する情報、反射回数などなど)が付随しています。したがって生存期間が重なるレイが増えると、メモリの消費が膨大になってしまうというジレンマに陥ります。また、並列化されたアルゴリズムも提案されていますが、スレッド数に比例させて高速化するのも難しいようです。また、Path TracingはWavefront方式に切り替える必要があります。</p>
+    <p data-line="NaN" class="code-line code-line code-line">このアプローチのメリットはダイナミックなシーンが簡単に扱えることが挙げられますが、複数種類のプリミティブを同時に容易に扱えるのも利点です。プリミティブの種類ごとにBVHを構築しストアしておく必要がありません。</p>
     <p data-line="NaN" class="code-line code-line code-line">DACRTをテーマにした論文にはどれも簡単に見つけられる(あるいは改善できる)欠点があり、突き詰めたものが存在しないという印象を受けます。逆に、論文を書くには大変良いテーマなのではないでしょうか。もちろん、プロダクションで使えるレベルに昇華させるのは全く別の問題です。</p>
     <div align="center">
         <img src="figures/naive.png" width=512>
@@ -171,10 +172,13 @@
     <p data-line="NaN" class="code-line code-line code-line">アルゴリズムは上のコードのようにシンプルです。まず、シーンを含むバウンディング・ボックス、プリミティブのリスト、それからレイのリストを入力し、プリミティブを何らかの基準によって2つのグループに分けます。一番単純な方法は、長軸でバウンディング・ボックスを2つに切断し、そのどちらかに含まれるかによって分類するものです。レイも同様に、左の子ノードにヒットするもの、右の子ノードにヒットするもの、といった具合に分類します。グループに分ける処理は一般的にフィルタリングと呼ばれます。フィルタリングを終えると、２つの子ノード、2つのプリミティブのリスト、2つのレイのリストができるので、それらに対しさらに同様の処理を行い、レイのリストのサイズとプリミティブのリストのサイズが共にある程度小さくなったら、総当たりの交差判定を行います。</p>
     <p data-line="NaN" class="code-line code-line code-line">フィルタリングは陰に使用するデータ構造やアルゴリズムにより異なり、右のノードにヒットするもの、左のノードにヒットするもの、それから両方のノードにヒットするものといった具合に2つ以上のグループに分けることもあります。</p>
     <p data-line="NaN" class="code-line code-line code-line"><a href="https://dl.acm.org/citation.cfm?id=2019636">Naive ray-tracing: A divide-and-conquer approach</a></p>
-    <p data-line="NaN" class="code-line code-line code-line">DACRTを提案した論文。同時期にmental imagesが同じ内容で特許を取っていたようです。</p>
+    <p data-line="NaN" class="code-line code-line code-line">DACRTを提案した論文です。2009年にmental imagesよる特許で同様の内容が記述されていたようです。</p>
     <p data-line="NaN" class="code-line code-line code-line">高速化手法としてConic Packet(円錐を使ったバンドルによるDACRT)が用いられています。これはレイの始点が同じである場合、1次レイやシャドウ・レイの計算に用いられています。</p>
-    <p data-line="NaN" class="code-line code-line code-line">アルゴリズムの解説文中にBVHという言葉が出てきませんが、分割はイン・プレイスであると書かれているので、陰に使われているデータ構造はObject SplittingのBVHと考えてよいでしょう。分割は長軸を切断するものです。10000以上プリミティブがある場合は間引いたプリミティブでSAHを計算、それ以下の場合は真ん中と、2通りの方法で分割位置を決めています。</p>
-    <p data-line="NaN" class="code-line code-line code-line">並列化については詳しい実装方法など書かれていませんが、2011年のi7、4コア8スレッドのCPUでSponzaのパス・トレーシングで4.6Mrays/sec(7回の拡散反射)という素晴らしい結果を達成しています。この数値は1スレッドの時の4.2倍であり、線形に近い高速化が達成できています。後ほど2本、並列化を扱った論文を取り上げますが、実はこの論文の実装のほうが優れていたのではないでしょうか。</p>
+    <p data-line="NaN" class="code-line code-line code-line">分割はイン・プレイスであると書かれているので、陰に使われているデータ構造はObject SplittingのBVHかと思っていたのですが、kd-treeが用いられています。10000以上プリミティブがある場合は間引いたプリミティブでSAHを計算、それ以下の場合は真ん中と、2通りの方法で分割位置を決めています。イン・プレイスで実装するため、フィルタリングは、左のノードと交差するものとそうでないものを分けるパス、右のノードと交差するものとそうでないものを分けるパスの2回行われています。</p>
+    <p data-line="NaN" class="code-line code-line code-line"><code>kd-treeはトラバースが高速であると考えられますが、kd-treeでフィルタリングを2回行うのと、Object Splittingでフィルタリングを1度だけ行うのとどちらが実際に早くなるか検証して見る必要がありそうです。</code></p>
+    <p data-line="NaN" class="code-line code-line code-line">並列化については詳しい実装方法など書かれていませんが、実は2011年のi7、4コア8スレッドのCPUを用いたパス・トレーシングで4.6Mrays/sec(Sponza、7回の拡散反射)という素晴らしい結果を達成しています。この数値は1スレッドの時の4.2倍であり、線形に近い高速化が達成できています。後ほど2本、並列化を扱った論文を取り上げますが、実はこの論文の実装のほうが優れていたのではないでしょうか。DACRTを試した見たい方は、まずこの論文をしっかり読むことをお勧めします。</p>
+    <p data-line="NaN" class="code-line code-line code-line"><a href="https://projet.liris.cnrs.fr/imagine/pub/proceedings/EUROGRAPHICS2012/short/pdf/097-100.pdf">Incoherent Ray Tracing without Acceleration Structures</a></p>
+    <p data-line="NaN" class="code-line code-line code-line">TODO:</p>
     <p data-line="NaN" class="code-line code-line code-line"><a href="http://www.wakayama-u.ac.jp/~iwasaki/project/dacrt/hpg2013final.pdf">Efficient Divide-And-Conquer Ray Tracing using Ray Sampling</a></p>
     <div align="center">
         <img src="figures/efficient_dacrt.png" width=512>
@@ -391,7 +395,7 @@
     <h3 id="%E4%BB%96%E5%88%86%E9%87%8E%E3%81%A7%E3%81%AE%E5%88%A9%E7%94%A8" data-line="NaN" class="code-line code-line code-line" id="e4bb96e58886e9878ee381a7e381aee588a9e794a8-1" id="e4bb96e58886e9878ee381a7e381aee588a9e794a8-2">他分野での利用</h3>
     <p data-line="NaN" class="code-line code-line code-line">レンダリングでは3次元のBVHが主に使われますが、次元を上げたり下げたりすれば、この記事で取り上げたテクニックは、データ・ベース等の全く別の分野で使えると思います。</p>
     <h2 id="%E3%81%95%E3%81%84%E3%81%94%E3%81%AB" data-line="NaN" class="code-line code-line code-line" id="e38195e38184e38194e381ab-1" id="e38195e38184e38194e381ab-2">さいごに</h2>
-    <p data-line="NaN" class="code-line code-line code-line">さまざまな手法を紹介しましたが、いかがだったでしょうか？論文の翻訳ではなく、多分に私の主観が入ったコメントが多くなったかと思いますが、長年やってきて正しいと思うことを述べるように努めました。紹介した以外にもまだまだ論文がありますし、知っていることを全て書いたわけでもありませんが(また、書けないこともあります)、この記事が何かしら研究や開発の参考、あるいはデータ構造に興味を持ってもらえるきっかけとなれば幸いです。また、BVHよりもさらに優れたデータ構造が存在することも十分考えられますので、固定観念にとらわれず、いろいろなアイデアを自由に試してみてください。一緒に研究したいという方は一報ください。お待ちしています。</p>
-    <p data-line="NaN" class="code-line code-line code-line">(記事のタイトルは小学生の時に大好きであった本、<a target="_blank" href="https://www.amazon.co.jp/%E9%9B%BB%E5%AD%90%E5%B7%A5%E4%BD%9C%E3%81%AE%E3%81%AF%E3%81%AA%E3%81%97%E3%80%881%E3%80%89-%E3%81%AF%E3%81%AA%E3%81%97%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E4%BD%90%E4%BC%AF-%E5%B9%B3%E4%BA%8C/dp/4765544346?&_encoding=UTF8&tag=dmie-22&linkCode=ur2&linkId=dd0e8ec6c6846e21026cc2b691cfb48c&camp=247&creative=1211">電子工作のはなし</a><img src="//ir-jp.amazon-adsystem.com/e/ir?t=dmie-22&l=ur2&o=9" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />から取っています。)</p>
+    <p data-line="NaN" class="code-line code-line code-line">さまざまな手法を紹介しましたが、いかがだったでしょうか？論文の翻訳ではなく、私の主観が入ったコメントが多くなったかと思いますが、長年やってきて正しいと思うことを述べるように努めました。紹介した以外にもまだまだ論文がありますし、知っていることを全て書いたわけでもありませんが(研究に取っておきたいアイデアや仕事を通じて知ったこと等書けないこともあります)、この記事が何かしら研究や開発の参考、あるいはデータ構造に興味を持ってもらえるきっかけとなれば幸いです。また、BVHよりもさらに優れたデータ構造が存在することも十分考えられますので、固定観念にとらわれず、いろいろなアイデアを自由に試してみてください。一緒に研究したいという方、学校などで講義して欲しいという方は<a href="https://twitter.com/ShinjiOgaki">ご一報</a>ください。お待ちしています。</p>
+    <p data-line="NaN" class="code-line code-line code-line">※ 記事のタイトルは小学生の時に大好きであった本、<a target="_blank" href="https://www.amazon.co.jp/%E9%9B%BB%E5%AD%90%E5%B7%A5%E4%BD%9C%E3%81%AE%E3%81%AF%E3%81%AA%E3%81%97%E3%80%881%E3%80%89-%E3%81%AF%E3%81%AA%E3%81%97%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E4%BD%90%E4%BC%AF-%E5%B9%B3%E4%BA%8C/dp/4765544346?&_encoding=UTF8&tag=dmie-22&linkCode=ur2&linkId=dd0e8ec6c6846e21026cc2b691cfb48c&camp=247&creative=1211">電子工作のはなし</a><img src="//ir-jp.amazon-adsystem.com/e/ir?t=dmie-22&l=ur2&o=9" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />にちなんで付けました。</p>
 </body>
 </html>
