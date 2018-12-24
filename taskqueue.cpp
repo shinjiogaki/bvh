@@ -9,7 +9,7 @@
 
 // small parallel BVH (object splitting) construction simulator (c) shinji ogaki
 
-struct Pivot
+struct Range
 {
 	int Start;
 	int End;
@@ -37,7 +37,7 @@ struct BVH
 	static const int LeafCount = 4;
 
 	// depth x 2 x num of threads is enough for binary tree
-	Pivot Pivots[1024];
+	Range Ranges[1024];
 
 	std::mutex Mutex;
 	int ActiveThreads;
@@ -49,17 +49,17 @@ struct BVH
 		NumberOfTasks = 0;
 	}
 
-	void InsertPivots(const Pivot &p)
+	void InsertRanges(const Range &r)
 	{
 		std::lock_guard<std::mutex> lock(Mutex);
 
 		// enough size?
-		if (LeafCount < p.Length())
+		if (LeafCount < r.Length())
 		{
 			// create inner node
-			const auto partition = p.Partition();
-			Pivots[NumberOfTasks + 0].Set(p.Start, partition);
-			Pivots[NumberOfTasks + 1].Set(partition, p.End);
+			const auto partition = r.Partition();
+			Ranges[NumberOfTasks + 0].Set(r.Start, partition);
+			Ranges[NumberOfTasks + 1].Set(partition, r.End);
 
 			// two tasks added
 			NumberOfTasks += 2;
@@ -69,7 +69,7 @@ struct BVH
 		--ActiveThreads;
 	}
 
-	bool GetPivot(Pivot &p)
+	bool GetRange(Range &r)
 	{
 		std::lock_guard<std::mutex> lock(Mutex);
 
@@ -78,7 +78,7 @@ struct BVH
 		{
 			--NumberOfTasks; // single task is taken
 			++ActiveThreads; // new threads starts working on it
-			p = Pivots[NumberOfTasks]; // task
+			r = Ranges[NumberOfTasks]; // task
 			return true;
 		}
 		return false;
@@ -89,13 +89,13 @@ struct BVH
 		return (0 < ActiveThreads) || (0 < NumberOfTasks);
 	}
 
-	void ProcessPivot(const Pivot &p)
+	void ProcessRange(const Range &r)
 	{
-		// do something costly
-		std::this_thread::sleep_for(std::chrono::milliseconds(10 + p.Length()));
+		// do something expensive
+		std::this_thread::sleep_for(std::chrono::milliseconds(10 + r.Length()));
 
-		// insert new node & pivots
-		InsertPivots(p);
+		// insert new node & ranges
+		InsertRanges(r);
 	}
 
 	void Build()
@@ -103,7 +103,7 @@ struct BVH
 		const auto num_threads = std::thread::hardware_concurrency();
 
 		NumberOfTasks = 1;
-		Pivots[0].Set(0, 64);
+		Ranges[0].Set(0, 64);
 
 		// alloc
 		std::vector<std::thread> threads(num_threads);
@@ -112,10 +112,10 @@ struct BVH
 		for (auto i = 0u; i < num_threads; ++i)
 			threads[i] = std::thread([&]
 		{
-			Pivot p;
+			Range p;
 			while (UnderConstruction())
-				if (GetPivot(p))
-					ProcessPivot(p);
+				if (GetRange(p))
+					ProcessRange(p);
 		});
 
 		// wait!
@@ -133,7 +133,7 @@ int main()
 		// start
 		const auto start = std::chrono::system_clock::now();
 
-		// create bvh and add a pivot
+		// create bvh and add a Range
 		BVH bvh;
 		bvh.Build();
 
