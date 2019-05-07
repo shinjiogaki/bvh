@@ -49,7 +49,7 @@ struct BVH
 		NumberOfTasks = 0;
 	}
 
-	void InsertRanges(const Range &r)
+	void InsertRange(const Range &r)
 	{
 		std::lock_guard<std::mutex> lock(Mutex);
 
@@ -95,7 +95,7 @@ struct BVH
 		std::this_thread::sleep_for(std::chrono::milliseconds(10 + r.Length()));
 
 		// insert new node & ranges
-		InsertRanges(r);
+		InsertRange(r);
 	}
 
 	void Build()
