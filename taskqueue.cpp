@@ -77,7 +77,7 @@ struct BVH
 		if (0 < NumberOfTasks)
 		{
 			--NumberOfTasks; // single task is taken
-			++ActiveThreads; // new threads starts working on it
+			++ActiveThreads; // new thread starts working on it
 			r = Ranges[NumberOfTasks]; // task
 			return true;
 		}
