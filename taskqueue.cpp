@@ -102,8 +102,6 @@ struct BVH
 		const auto num_threads = std::thread::hardware_concurrency();
 
 		NumTasks = 1;
-		MaxElems = 64;
-		Ranges[0].Set(0, 64);
 
 		// alloc
 		std::vector<std::thread> threads(num_threads);
@@ -126,23 +124,21 @@ struct BVH
 
 int main()
 {
-	static const auto num_repeats = 1; // repeat many times to make sure it doesn't crash
+	// start
+	const auto start = std::chrono::system_clock::now();
 
-	for (auto l = 0; l < num_repeats; ++l)
-	{
-		// start
-		const auto start = std::chrono::system_clock::now();
+	// build bvh
+	BVH bvh;
+	bvh.MaxElems = 64;
+	bvh.Ranges[0].Set(0, 64);
+	bvh.Build();
 
-		// create bvh and add a Range
-		BVH bvh;
-		bvh.Build();
+	// end
+	const auto end = std::chrono::system_clock::now();
 
-		// end
-		const auto end = std::chrono::system_clock::now();
+	// log
+	const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << elapsed << " [msec]" << std::endl;
 
-		// log
-		const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-		std::cout << elapsed << " [msec]" << std::endl;
-	}
 	return 0;
 }
