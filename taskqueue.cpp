@@ -101,8 +101,6 @@ struct BVH
 	{
 		const auto num_threads = std::thread::hardware_concurrency();
 
-		NumTasks = 1;
-
 		// alloc
 		std::vector<std::thread> threads(num_threads);
 
@@ -129,6 +127,7 @@ int main()
 
 	// build bvh
 	BVH bvh;
+	bvh.NumTasks = 1;
 	bvh.MaxElems = 64;
 	bvh.Ranges[0].Set(0, 64);
 	bvh.Build();
