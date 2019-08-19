@@ -19,7 +19,6 @@ struct Range
 
 	int Partition() const
 	{
-		// object median
 		return (Start + End) / 2;
 	}
 
@@ -40,12 +39,6 @@ struct BVH
 	int Progress;
 	int MaxElems;
 	int NumTasks;
-
-	BVH()
-	{
-		Progress = 0;
-		NumTasks = 0;
-	}
 
 	void InsertRange(const Range &r)
 	{
@@ -98,9 +91,14 @@ struct BVH
 		InsertRange(r);
 	}
 
-	void Build()
+	void Build(const int max_elems)
 	{
 		const auto num_threads = std::thread::hardware_concurrency();
+
+		Progress = 0;
+		NumTasks = 1;
+		MaxElems = max_elems;
+		Ranges[0].Set(0, max_elems);
 
 		// alloc
 		std::vector<std::thread> threads(num_threads);
@@ -128,10 +126,7 @@ int main()
 
 	// build bvh
 	BVH bvh;
-	bvh.NumTasks = 1;
-	bvh.MaxElems = 64;
-	bvh.Ranges[0].Set(0, 64);
-	bvh.Build();
+	bvh.Build(64);
 
 	// end
 	const auto end = std::chrono::system_clock::now();
