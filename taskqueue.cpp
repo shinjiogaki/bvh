@@ -76,8 +76,8 @@ struct BVH
 		// NumberOfTasks=0 doesn't necessarily mean that build is done
 		if (0 < NumberOfTasks)
 		{
-			--NumberOfTasks; // single task is taken
 			++ActiveThreads; // new thread starts working on it
+			--NumberOfTasks; // single task is taken
 			r = Ranges[NumberOfTasks]; // task
 			return true;
 		}
