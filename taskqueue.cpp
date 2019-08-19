@@ -1,6 +1,5 @@
 #include <iostream>
 #include <thread>
-#include <atomic>
 #include <vector>
 #include <mutex>
 #include <algorithm>
