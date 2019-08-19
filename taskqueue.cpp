@@ -2,9 +2,6 @@
 #include <thread>
 #include <vector>
 #include <mutex>
-#include <algorithm>
-#include <numeric>
-#include <execution>
 
 // small parallel BVH (object splitting) construction simulator (c) shinji ogaki
 
@@ -39,45 +36,47 @@ struct BVH
 	Range Ranges[1024];
 
 	std::mutex Mutex;
-	int ActiveThreads;
-	int NumberOfTasks;
+	int Progress;
+	int MaxElems;
+	int NumTasks;
 
 	BVH()
 	{
-		ActiveThreads = 0;
-		NumberOfTasks = 0;
+		Progress = 0;
+		NumTasks = 0;
 	}
 
 	void InsertRange(const Range &r)
 	{
 		std::lock_guard<std::mutex> lock(Mutex);
 
-		// enough size?
+		// Node
 		if (LeafCount < r.Length())
 		{
 			// create inner node
 			const auto partition = r.Partition();
-			Ranges[NumberOfTasks + 0].Set(r.Start, partition);
-			Ranges[NumberOfTasks + 1].Set(partition, r.End);
+			Ranges[NumTasks + 0].Set(r.Start, partition);
+			Ranges[NumTasks + 1].Set(partition, r.End);
 
 			// two tasks added
-			NumberOfTasks += 2;
+			NumTasks += 2;
 		}
-
-		// task is done
-		--ActiveThreads;
+		// Leaf
+		else
+		{
+			Progress += r.Length();
+		}
 	}
 
 	bool GetRange(Range &r)
 	{
 		std::lock_guard<std::mutex> lock(Mutex);
 
-		// NumberOfTasks=0 doesn't necessarily mean that build is done
-		if (0 < NumberOfTasks)
+		// NumTasks=0 doesn't necessarily mean that build is done
+		if (0 < NumTasks)
 		{
-			++ActiveThreads; // new thread starts working on it
-			--NumberOfTasks; // single task is taken
-			r = Ranges[NumberOfTasks]; // task
+			--NumTasks; // single task is taken
+			r = Ranges[NumTasks]; // task
 			return true;
 		}
 		return false;
@@ -85,7 +84,8 @@ struct BVH
 
 	bool UnderConstruction()
 	{
-		return (0 < ActiveThreads) || (0 < NumberOfTasks);
+		// Yuichi Sayama's idea
+		return (Progress < MaxElems);
 	}
 
 	void ProcessRange(const Range &r)
@@ -101,7 +101,8 @@ struct BVH
 	{
 		const auto num_threads = std::thread::hardware_concurrency();
 
-		NumberOfTasks = 1;
+		NumTasks = 1;
+		MaxElems = 64;
 		Ranges[0].Set(0, 64);
 
 		// alloc
@@ -118,8 +119,8 @@ struct BVH
 		});
 
 		// wait!
-		for (auto i = 0u; i < num_threads; ++i)
-			threads[i].join();
+		for (auto& thread : threads)
+			thread.join();
 	}
 };
 
