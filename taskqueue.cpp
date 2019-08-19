@@ -19,6 +19,7 @@ struct Range
 
 	int Partition() const
 	{
+		// object median
 		return (Start + End) / 2;
 	}
 
