@@ -1,5 +1,5 @@
-# BVH STAR-ish report in Japanese
-* [BVHのはなし](https://shinjiogaki.github.io/bvh/)
+# BVHのはなし
+* [state of the art report in Japanese](https://shinjiogaki.github.io/bvh/)
 
 # Code examples (compiled and tested with VS 2017)
 ## Task queue for top-down builders
