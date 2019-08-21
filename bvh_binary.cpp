@@ -61,7 +61,7 @@ void LBVH::Build()
 	for (auto &p : other_bounds)
 		p.store(invalid);
 
-	// subtract scene minimum. don't forget transform rays.
+	// subtract scene minimum. don't forget transforming rays.
 	Minimum = glm::vec3(maximum);
 	for (auto&p : Ps)
 		Minimum = glm::min(Minimum, p);
