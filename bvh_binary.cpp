@@ -55,7 +55,8 @@ void LBVH::Build()
 	Nodes.resize(N);
 
 	// otherBounds in algorithm 1 of the paper
-	// "Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"	// https://arxiv.org/pdf/1901.05423.pdf
+	// "Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"
+	// https://arxiv.org/pdf/1901.05423.pdf
 	std::vector<std::atomic<uint32_t>> other_bounds(N);
 	for (auto &p : other_bounds)
 		p.store(invalid);
@@ -68,7 +69,7 @@ void LBVH::Build()
 		p += Minimum;
 
 	std::cout
-		<< "scene minimum "
+		<< "min: "
 		<< Minimum.x << " "
 		<< Minimum.x << " "
 		<< Minimum.x << std::endl;
