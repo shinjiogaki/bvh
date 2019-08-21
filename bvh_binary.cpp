@@ -68,11 +68,7 @@ void LBVH::Build()
 	for (auto&p : Ps)
 		p -= Minimum;
 
-	std::cout
-		<< "min: "
-		<< Minimum.x << " "
-		<< Minimum.x << " "
-		<< Minimum.x << std::endl;
+	std::cout << "min: " << Minimum.x << " " << Minimum.x << " " << Minimum.x << std::endl;
 
 	// for all leaf
 #pragma omp parallel for
@@ -107,28 +103,23 @@ void LBVH::Build()
 			const auto index = leaf ? leaves[current].x * 2 + 1 : current * 2;
 
 			// choose parent
-			auto terminate = false;
-			uint32_t parent;
+			uint32_t previous, parent;
 			if (0 == L || (R != N && delta(leaves, R) < delta(leaves, L - 1)))
 			{
 				// parent is right and "L" doesn't change
-				parent = R;
-				const auto old = other_bounds[parent].exchange(L);
-				terminate = (old == invalid);
-				if(!terminate)
-					R = old;
-				// set left child
+				parent   = R;
+				previous = other_bounds[parent].exchange(L);
+				if(invalid != previous)
+					R = previous;
 				Nodes[parent].L = index;
 			}
 			else
 			{
 				// parent is left and "R" doesn't change
-				parent = L - 1;
-				const auto old = other_bounds[parent].exchange(R);
-				terminate = (old == invalid);
-				if (!terminate)
-					L = old;
-				// set right child
+				parent   = L - 1;
+				previous = other_bounds[parent].exchange(R);
+				if (invalid != previous)
+					L = previous;
 				Nodes[parent].R = index;
 			}
 
@@ -138,13 +129,13 @@ void LBVH::Build()
 			Nodes[parent].AABB.Expand(aabb);
 
 			// terminate this thread
-			if (terminate)
+			if (invalid == previous)
 				break;
 
 			// ascend
 			current = parent;
-			aabb = Nodes[current].AABB;
-			leaf = false;
+			aabb    = Nodes[current].AABB;
+			leaf    = false;
 		}
 	}
 
