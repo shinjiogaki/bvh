@@ -82,8 +82,8 @@ void LBVH::Build()
 		auto current = i;
 
 		// range
-		auto L = i;
-		auto R = i;
+		uint32_t L = i;
+		uint32_t R = i;
 
 		// leaf aabb
 		const auto id = leaves[i].x * 3;
@@ -91,7 +91,7 @@ void LBVH::Build()
 		aabb.Expand(Ps[PIDs[id + 0]]);
 		aabb.Expand(Ps[PIDs[id + 1]]);
 		aabb.Expand(Ps[PIDs[id + 2]]);
-		
+
 		// current is leaf or node?
 		auto leaf = true;
 		while (1)
@@ -112,29 +112,27 @@ void LBVH::Build()
 			if (0 == L || (R != N && delta(leaves, R) < delta(leaves, L - 1)))
 			{
 				// parent is right and "L" doesn't change
-				parent    = R;
-				terminate = (other_bounds[parent] == invalid);
-				if(terminate)
-					other_bounds[parent] = L;
-				else
-					R = other_bounds[parent];
+				parent = R;
+				const auto old = other_bounds[parent].exchange(L);
+				terminate = (old == invalid);
+				if(!terminate)
+					R = old;
 				// set left child
 				Nodes[parent].L = index;
 			}
 			else
 			{
 				// parent is left and "R" doesn't change
-				parent    = L - 1;
-				terminate = (other_bounds[parent] == invalid);
-				if(terminate)
-					other_bounds[parent] = R;
-				else
-					L = other_bounds[parent];
+				parent = L - 1;
+				const auto old = other_bounds[parent].exchange(R);
+				terminate = (old == invalid);
+				if (!terminate)
+					L = old;
 				// set right child
 				Nodes[parent].R = index;
 			}
 
-			//assert(L < R);
+			assert(L < R);
 
 			// expand aabb
 			Nodes[parent].AABB.Expand(aabb);
@@ -145,11 +143,11 @@ void LBVH::Build()
 
 			// ascend
 			current = parent;
-			aabb    = Nodes[current].AABB;
-			leaf    = false;
+			aabb = Nodes[current].AABB;
+			leaf = false;
 		}
 	}
-	
+
 	const auto end = std::chrono::steady_clock::now();
 
 	std::cout << "bvh: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
@@ -160,7 +158,7 @@ void LBVH::Build()
 	{
 		sah += n.AABB.HalvedSurface();
 	}
-	std::cout << "sah: " <<std::setprecision(16) << sah << std::endl;
+	std::cout << "sah: " << std::setprecision(16) << sah << std::endl;
 }
 
 // for debug
