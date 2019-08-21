@@ -9,9 +9,9 @@ thread_local glm::vec3  MiniRay::Inverse;
 
 // delta function in sec3 of the paper
 // "Fast and Simple Agglomerative LBVH Construction"
-__forceinline uint32_t delta(const std::vector<glm::uvec2> &leaves, const uint32_t id)
+__forceinline uint32_t Delta(const std::vector<glm::uvec3> &leaves, const uint32_t id)
 {
-	return leaves[id + 1].y ^ leaves[id].y;
+	return leaves[id + 1].z ^ leaves[id].z;
 }
 
 void LBVH::Build()
@@ -26,27 +26,32 @@ void LBVH::Build()
 	const auto T = PIDs.size() / 3;
 
 	// allocate pair <reference, morton code>
-	std::vector<glm::uvec2> leaves(T);
+	std::vector<glm::uvec3> leaves(T);
 
-	// morton codes
-#pragma omp parallel for
+	// set order
 	for (auto i = 0; i < T; ++i)
-	{
-		const auto id0 = i * 3 + 0;
-		const auto id1 = i * 3 + 1;
-		const auto id2 = i * 3 + 2;
+		leaves[i].x = i;
 
+	// set morton code
+	std::for_each(std::execution::par, leaves.begin(), leaves.end(), [&](glm::uvec3 &leaf)
+	{
+		const auto id0 = leaf.x * 3 + 0;
+		const auto id1 = leaf.x * 3 + 1;
+		const auto id2 = leaf.x * 3 + 2;
 		const auto centroid = (Ps[PIDs[id0]] + Ps[PIDs[id1]] + Ps[PIDs[id2]]) / 3.0f;
-		const auto unitcube = Bound.Nomalize(centroid); // coord in unit cube
-		leaves[i].x = i; // reference to primitive
-		leaves[i].y = morton3D(unitcube.x, unitcube.y, unitcube.z); // morton code
-	}
+		const auto unitcube = Bound.Nomalize(centroid);        // coord in unit cube
+		leaf.z = morton3D(unitcube.x, unitcube.y, unitcube.z); // morton code
+	});
 
 	// sort leaves by morton code in ascending order
-	std::sort(std::execution::par, std::begin(leaves), std::end(leaves), [&](const glm::uvec2 &l, const glm::uvec2 &r)
+	std::sort(std::execution::par, std::begin(leaves), std::end(leaves), [&](const glm::uvec3 &l, const glm::uvec3 &r)
 	{
-		return (l.y < r.y);
+		return (l.z < r.z);
 	});
+
+	// set order (because getting thread id in for_each is somewhat cumbersome...)
+	for (auto i = 0; i < T; ++i)
+		leaves[i].y = i;
 
 	// number of nodes
 	const auto N = T - 1;
@@ -58,38 +63,36 @@ void LBVH::Build()
 	// "Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"
 	// https://arxiv.org/pdf/1901.05423.pdf
 	std::vector<std::atomic<uint32_t>> other_bounds(N);
-	for (auto &p : other_bounds)
-		p.store(invalid);
+	std::for_each(std::execution::par, other_bounds.begin(), other_bounds.end(), [&](std::atomic<uint32_t> &b)
+	{
+		b.store(invalid);
+	});
 
 	// subtract scene minimum. don't forget transforming rays.
-	Minimum = glm::vec3(maximum);
-	for (auto&p : Ps)
-		Minimum = glm::min(Minimum, p);
-	for (auto&p : Ps)
-		p -= Minimum;
+	std::for_each(std::execution::par, Ps.begin(), Ps.end(), [&](glm::vec3 &p)
+	{
+		p -= Bound.Min;
+	});
 
-	std::cout << "min: " << Minimum.x << " " << Minimum.x << " " << Minimum.x << std::endl;
-
-	// for all leaf
-#pragma omp parallel for
-	for (auto i = 0; i < T; ++i)
+	// for each leaf
+	std::for_each(std::execution::par, leaves.begin(), leaves.end(), [&](glm::uvec3 &leaf)
 	{
 		// current leaf/node id
-		auto current = i;
+		auto current = leaf.y;
 
 		// range
-		uint32_t L = i;
-		uint32_t R = i;
+		uint32_t L = current;
+		uint32_t R = current;
 
 		// leaf aabb
-		const auto id = leaves[i].x * 3;
+		const auto id = leaf.x * 3;
 		AABB aabb;
 		aabb.Expand(Ps[PIDs[id + 0]]);
 		aabb.Expand(Ps[PIDs[id + 1]]);
 		aabb.Expand(Ps[PIDs[id + 2]]);
 
 		// current is leaf or node?
-		auto leaf = true;
+		auto is_leaf = true;
 		while (1)
 		{
 			// the whole range is covered
@@ -100,11 +103,11 @@ void LBVH::Build()
 			}
 
 			// leaf/node index
-			const auto index = leaf ? leaves[current].x * 2 + 1 : current * 2;
+			const auto index = is_leaf ? leaves[current].x * 2 + 1 : current * 2;
 
 			// choose parent
 			uint32_t previous, parent;
-			if (0 == L || (R != N && delta(leaves, R) < delta(leaves, L - 1)))
+			if (0 == L || (R != N && Delta(leaves, R) < Delta(leaves, L - 1)))
 			{
 				// parent is right and "L" doesn't change
 				parent   = R;
@@ -135,9 +138,9 @@ void LBVH::Build()
 			// ascend
 			current = parent;
 			aabb    = Nodes[current].AABB;
-			leaf    = false;
+			is_leaf = false;
 		}
-	}
+	});
 
 	const auto end = std::chrono::steady_clock::now();
 
@@ -152,24 +155,3 @@ void LBVH::Build()
 	std::cout << "sah: " << std::setprecision(16) << sah << std::endl;
 }
 
-// for debug
-void AABB::Print()
-{
-	std::cout << "min: "
-		<< to_float(AtomicMin[0]) << " "
-		<< to_float(AtomicMin[1]) << " "
-		<< to_float(AtomicMin[2]) << std::endl;
-	std::cout << "min: "
-		<< Min.x << " "
-		<< Min.y << " "
-		<< Min.z << std::endl;
-
-	std::cout << "max: "
-		<< to_float(AtomicMax[0]) << " "
-		<< to_float(AtomicMax[1]) << " "
-		<< to_float(AtomicMax[2]) << std::endl;
-	std::cout << "max: "
-		<< Max.x << " "
-		<< Max.y << " "
-		<< Max.z << std::endl;
-}
