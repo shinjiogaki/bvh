@@ -1,8 +1,8 @@
 # BVH STAR-ish report in Japanese
 [BVHのはなし](https://shinjiogaki.github.io/bvh/)
 
-# code examples
-## task que for top-down builders
+# Code examples
+## Task que for top-down builders
 * [taskque for parallel top down builder](https://github.com/shinjiogaki/bvh/blob/master/taskqueue.cpp)
 ## "Fast and Simple Agglomerative LBVH Construction"
 * [header](https://github.com/shinjiogaki/bvh/blob/master/bvh_binary.h)
