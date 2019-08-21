@@ -141,9 +141,6 @@ struct AABB
 
 		return (min <= max) && (0.0f < max) && (min < length);
 	}
-
-	// Debug
-	void Print();
 };
 
 __declspec(align(8))
@@ -195,20 +192,16 @@ struct LBVH
 		return xx * 4 + yy * 2 + zz;
 	}
 
-	AABB      Bound;   // Scene Bound
-	glm::vec3 Minimum; // Minimum of Ps
-	uint32_t  Root;    // Root Node ID
+	AABB      Bound; // Scene Bound
+	uint32_t  Root;  // Root Node ID
 
-	std::vector<glm::vec3> Ps;    // Positions
-	std::vector<glm::vec3> Ns;    // Normals
-	std::vector<uint32_t>  PIDs;  // Position IDs (T x 3)
-	std::vector<uint32_t>  NIDs;  // Normal IDs
 	std::vector<Node>      Nodes; // LBVH Nodes (T - 1)
+	std::vector<glm::vec3> Ps;    // Positions
+	std::vector<uint32_t>  PIDs;  // Position IDs (T x 3)
 
 	void Build();
 
 	// implement your own
-	void Occlusion(const MiniRay &ray, const uint32_t node_id, bool &flag);
-	void Intersect(RadianceRay &ray, const uint32_t node_id, bool &flag);
-	bool Intersect(const uint32_t face, const MiniRay &miniray, const float length, float &param, float &u, float &v, float &w);
+	//bool Occlusion(const MiniRay &ray, ...);
+	//void Intersect(RadianceRay &ray, ...);
 };
