@@ -3,6 +3,7 @@
 #include <chrono>    // std::chrono
 #include <execution> // std::execution::par
 #include <iomanip>   // std::setprecision
+#include <iostream>  // std::cout
 
 thread_local glm::vec3  MiniRay::Inverse;
 
