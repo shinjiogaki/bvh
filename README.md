@@ -10,4 +10,4 @@
 
 # Acknowledgements
 * Yuichi Sayama gave me an idea of how to make my task queue example robust.
-* Yusuke Tokuyoshi shared the link to this paper "https://arxiv.org/pdf/1901.05423.pdf".
+* Yusuke Tokuyoshi shared the link to the paper ["Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"](https://arxiv.org/pdf/1901.05423.pdf).
