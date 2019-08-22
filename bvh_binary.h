@@ -3,7 +3,6 @@
 #include <algorithm> // std::min, std::sort
 #include <atomic>    // std::atomic
 #include <vector>    // std::vector
-#include <iostream>  // std::cout
 
 #include "glm/glm.hpp"
 
