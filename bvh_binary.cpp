@@ -68,12 +68,6 @@ void LBVH::Build()
 		b.store(invalid);
 	});
 
-	// subtract scene minimum. don't forget transforming rays.
-	std::for_each(std::execution::par, Ps.begin(), Ps.end(), [&](glm::vec3 &p)
-	{
-		p -= Bound.Min;
-	});
-
 	// for each leaf
 	std::for_each(std::execution::par, leaves.begin(), leaves.end(), [&](glm::uvec3 &leaf)
 	{
@@ -87,9 +81,9 @@ void LBVH::Build()
 		// leaf aabb
 		const auto id = leaf.x * 3;
 		AABB aabb;
-		aabb.Expand(Ps[PIDs[id + 0]]);
-		aabb.Expand(Ps[PIDs[id + 1]]);
-		aabb.Expand(Ps[PIDs[id + 2]]);
+		aabb.Expand(Ps[PIDs[id + 0]] - Bound.Min);
+		aabb.Expand(Ps[PIDs[id + 1]] - Bound.Min);
+		aabb.Expand(Ps[PIDs[id + 2]] - Bound.Min);
 
 		// current is leaf or node?
 		auto is_leaf = true;
@@ -145,6 +139,12 @@ void LBVH::Build()
 	const auto end = std::chrono::steady_clock::now();
 
 	std::cout << "bvh: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+
+	std::for_each(std::execution::par, Nodes.begin(), Nodes.end(), [&](Node &node)
+	{
+		node.AABB.Min += Bound.Min;
+		node.AABB.Max += Bound.Min;
+	});
 
 	// debug
 	double sah = 0;
