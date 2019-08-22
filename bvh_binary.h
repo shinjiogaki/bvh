@@ -1,9 +1,9 @@
 #pragma once
 
 #include <algorithm> // std::min, std::sort
-#include <atomic>
-#include <vector>
-#include <iostream>
+#include <atomic>    // std::atomic
+#include <vector>    // std::vector
+#include <iostream>  // std::cout
 
 #include "glm/glm.hpp"
 
@@ -19,6 +19,8 @@ struct MiniRay
 	glm::vec3 Direction;
 };
 
+typedef MiniRay ShadowRay;
+
 __declspec(align(8))
 struct RadianceRay
 {
@@ -27,6 +29,20 @@ struct RadianceRay
 	float     Length;
 	uint32_t  Face;
 };
+
+__forceinline static uint32_t to_uint(float f)
+{
+	uint32_t ui;
+	memcpy(&ui, &f, sizeof(float));
+	return ui;
+}
+
+__forceinline static float to_float(uint32_t ui)
+{
+	float f;
+	memcpy(&f, &ui, sizeof(uint32_t));
+	return f;
+}
 
 struct AABB
 {
@@ -40,20 +56,6 @@ struct AABB
 		std::atomic<uint32_t> AtomicMax[3];
 		glm::vec3 Max;
 	};
-
-	__forceinline uint32_t to_uint(float f) const
-	{
-		uint32_t ui;
-		memcpy(&ui, &f, sizeof(float));
-		return ui;
-	}
-
-	__forceinline float to_float(uint32_t ui) const
-	{
-		float f;
-		memcpy(&f, &ui, sizeof(uint32_t));
-		return f;
-	}
 
 	__forceinline void update_min(std::atomic<uint32_t>& min_value, const uint32_t value) noexcept
 	{
@@ -71,15 +73,12 @@ struct AABB
 		}
 	}
 
-	AABB()
-	{
-		AtomicMax[0] = 0;
-		AtomicMax[1] = 0;
-		AtomicMax[2] = 0;
+	AABB() = default;
 
-		AtomicMin[0] = to_uint(maximum);
-		AtomicMin[1] = to_uint(maximum);
-		AtomicMin[2] = to_uint(maximum);
+	void Initialize()
+	{
+		Min = glm::vec3(maximum);
+		Max = glm::vec3(minimum);
 	}
 
 	AABB(const AABB& box)
@@ -144,7 +143,7 @@ struct AABB
 __declspec(align(8))
 struct Node
 {
-	AABB AABB;
+	AABB Box;
 
 	// Child Indices
 	// if lowest bit is 1, leaf
@@ -155,6 +154,13 @@ struct Node
 
 	Node() : L(invalid), R(invalid)
 	{
+		Box.AtomicMax[0] = 0;
+		Box.AtomicMax[1] = 0;
+		Box.AtomicMax[2] = 0;
+
+		Box.AtomicMin[0] = to_uint(maximum);
+		Box.AtomicMin[1] = to_uint(maximum);
+		Box.AtomicMin[2] = to_uint(maximum);
 	}
 };
 
@@ -190,8 +196,8 @@ struct LBVH
 		return xx * 4 + yy * 2 + zz;
 	}
 
-	AABB      Bound; // Scene Bound
-	uint32_t  Root;  // Root Node ID
+	AABB      Box;  // Scene Bound
+	uint32_t  Root; // Root Node ID
 
 	std::vector<Node>      Nodes; // LBVH Nodes (T - 1)
 	std::vector<glm::vec3> Ps;    // Positions
