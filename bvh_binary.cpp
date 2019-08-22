@@ -140,14 +140,13 @@ void LBVH::Build()
 		}
 	});
 
-	const auto end = std::chrono::steady_clock::now();
-
 	std::for_each(std::execution::par, Nodes.begin(), Nodes.end(), [&](Node &node)
 	{
 		node.Box.Min += Box.Min;
 		node.Box.Max += Box.Min;
 	});
 
+	const auto end = std::chrono::steady_clock::now();
 	std::cout << "bvh: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
 	// debug
