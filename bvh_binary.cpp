@@ -1,8 +1,7 @@
 #include "bvh_binary.h"
 
-#include <chrono>
-#include <execution> // execution::par
-#include <iostream>  // std::cout
+#include <chrono>    // std::chrono
+#include <execution> // std::execution::par
 #include <iomanip>   // std::setprecision
 
 thread_local glm::vec3  MiniRay::Inverse;
@@ -19,8 +18,9 @@ void LBVH::Build()
 	const auto start = std::chrono::steady_clock::now();
 
 	// object bounding box
+	Box.Initialize();
 	for (const auto &p : Ps)
-		Bound.Expand(p);
+		Box.Expand(p);
 
 	// number of triangles
 	const auto T = PIDs.size() / 3;
@@ -39,7 +39,7 @@ void LBVH::Build()
 		const auto id1 = leaf.x * 3 + 1;
 		const auto id2 = leaf.x * 3 + 2;
 		const auto centroid = (Ps[PIDs[id0]] + Ps[PIDs[id1]] + Ps[PIDs[id2]]) / 3.0f;
-		const auto unitcube = Bound.Nomalize(centroid);        // coord in unit cube
+		const auto unitcube = Box.Nomalize(centroid); // coord in unit cube
 		leaf.z = morton3D(unitcube.x, unitcube.y, unitcube.z); // morton code
 	});
 
@@ -81,9 +81,12 @@ void LBVH::Build()
 		// leaf aabb
 		const auto id = leaf.x * 3;
 		AABB aabb;
-		aabb.Expand(Ps[PIDs[id + 0]] - Bound.Min);
-		aabb.Expand(Ps[PIDs[id + 1]] - Bound.Min);
-		aabb.Expand(Ps[PIDs[id + 2]] - Bound.Min);
+		aabb.Initialize();
+		aabb.Expand(Ps[PIDs[id + 0]]);
+		aabb.Expand(Ps[PIDs[id + 1]]);
+		aabb.Expand(Ps[PIDs[id + 2]]);
+		aabb.Min -= Box.Min;
+		aabb.Max -= Box.Min;
 
 		// current is leaf or node?
 		auto is_leaf = true;
@@ -123,7 +126,7 @@ void LBVH::Build()
 			assert(L < R);
 
 			// expand aabb
-			Nodes[parent].AABB.Expand(aabb);
+			Nodes[parent].Box.Expand(aabb);
 
 			// terminate this thread
 			if (invalid == previous)
@@ -131,7 +134,7 @@ void LBVH::Build()
 
 			// ascend
 			current = parent;
-			aabb    = Nodes[current].AABB;
+			aabb    = Nodes[current].Box;
 			is_leaf = false;
 		}
 	});
@@ -142,15 +145,15 @@ void LBVH::Build()
 
 	std::for_each(std::execution::par, Nodes.begin(), Nodes.end(), [&](Node &node)
 	{
-		node.AABB.Min += Bound.Min;
-		node.AABB.Max += Bound.Min;
+		node.Box.Min += Box.Min;
+		node.Box.Max += Box.Min;
 	});
 
 	// debug
 	double sah = 0;
 	for (const auto &n : Nodes)
 	{
-		sah += n.AABB.HalvedSurface();
+		sah += n.Box.HalvedSurface();
 	}
 	std::cout << "sah: " << std::setprecision(16) << sah << std::endl;
 }
