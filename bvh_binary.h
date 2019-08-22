@@ -19,8 +19,6 @@ struct MiniRay
 	glm::vec3 Direction;
 };
 
-typedef MiniRay ShadowRay;
-
 __declspec(align(8))
 struct RadianceRay
 {
