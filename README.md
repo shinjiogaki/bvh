@@ -1,5 +1,6 @@
 # BVHのはなし
 * [state of the art report in Japanese](https://shinjiogaki.github.io/bvh/)
+* [slide deck for CEDEC 2019](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pptx)
 
 # Code examples (compiled and tested with VS 2017)
 ## Task queue for top-down builders
@@ -7,6 +8,7 @@
 ## "Fast and Simple Agglomerative LBVH Construction"
 * [header](https://github.com/shinjiogaki/bvh/blob/master/bvh_binary.h)
 * [cpp](https://github.com/shinjiogaki/bvh/blob/master/bvh_binary.cpp)
+
 
 # Acknowledgements
 * Yuichi Sayama gave me an idea of how to make my task queue example simple and stable.
