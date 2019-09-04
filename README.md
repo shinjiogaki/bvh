@@ -1,6 +1,7 @@
 # BVHのはなし
 * [state of the art report in Japanese](https://shinjiogaki.github.io/bvh/)
-* [slide deck for CEDEC 2019](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pptx)
+# Slide deck for CEDEC 2019
+* [pptx](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pptx)
 
 # Code examples (compiled and tested with VS 2017)
 ## Task queue for top-down builders
