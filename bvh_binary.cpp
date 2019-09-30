@@ -124,14 +124,14 @@ void LBVH::Build()
 				Nodes[parent].R = index;
 			}
 
-			assert(L < R);
-
 			// expand aabb
 			Nodes[parent].Box.Expand(aabb);
 
 			// terminate this thread
 			if (invalid == previous)
 				break;
+
+			assert(L < R);
 
 			// ascend
 			current = parent;
