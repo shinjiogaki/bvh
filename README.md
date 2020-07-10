@@ -1,6 +1,6 @@
 # BVHのはなし
 * [state of the art report in Japanese](https://shinjiogaki.github.io/bvh/)
-# Slide deck for CEDEC 2019
+# Slide deck for CEDEC 2019 (updated 10/07/2020)
 * [pptx](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pptx)
 * [pdf](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pdf)
 
@@ -14,4 +14,4 @@
 
 # Acknowledgements
 * Yuichi Sayama gave me an idea of how to make my task queue example simple and stable.
-* Yusuke Tokuyoshi shared the link to the paper ["Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"](https://arxiv.org/pdf/1901.05423.pdf).
+* Yusuke Tokuyoshi sent me the link to the paper ["Massively Parallel Construction of Radix Tree Forests for the Efficient Sampling of Discrete Probability Distributions"](https://arxiv.org/pdf/1901.05423.pdf).
