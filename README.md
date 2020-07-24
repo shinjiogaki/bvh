@@ -4,13 +4,14 @@
 * [pptx](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pptx)
 * [pdf](https://github.com/shinjiogaki/bvh/blob/master/CEDEC2019.pdf)
 
-# Code examples (compiled and tested with VS 2017)
+# Code examples
 ## Task queue for top-down builders
 * [cpp](https://github.com/shinjiogaki/bvh/blob/master/taskqueue.cpp)
-## "Fast and Simple Agglomerative LBVH Construction"
+## "Fast and Simple Agglomerative LBVH Construction" by Ciprian Apetrei
 * [header](https://github.com/shinjiogaki/bvh/blob/master/bvh_binary.h)
 * [cpp](https://github.com/shinjiogaki/bvh/blob/master/bvh_binary.cpp)
-
+## "Binary Ostensibly-Implicit Trees for Fast Collision Detection" by Chitalu et al.
+* [cpp](https://github.com/shinjiogaki/bvh/blob/master/oibvh.cpp)
 
 # Acknowledgements
 * Yuichi Sayama gave me an idea of how to make my task queue example simple and stable.
